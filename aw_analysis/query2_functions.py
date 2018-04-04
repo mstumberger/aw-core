@@ -53,15 +53,17 @@ def q2_query_bucket_eventcount(datastore: Datastore, namespace: dict, bucketname
 """
     Filtering functions
 """
-def q2_filter_keyvals(datastore: Datastore, namespace: dict, events: list, key: str, *vals):
+def q2_filter_keyvals(datastore: Datastore, namespace: dict, events: list, key: str, vals: list):
     _verify_variable_is_type(events, list)
     _verify_variable_is_type(key, str)
-    return filter_keyvals(events, key, list(vals), False)
+    _verify_variable_is_type(vals, list)
+    return filter_keyvals(events, key, vals, False)
 
-def q2_exclude_keyvals(datastore: Datastore, namespace: dict, events: list, key: str, *vals):
+def q2_exclude_keyvals(datastore: Datastore, namespace: dict, events: list, key: str, vals: list):
     _verify_variable_is_type(events, list)
     _verify_variable_is_type(key, str)
-    return filter_keyvals(events, key, list(vals), True)
+    _verify_variable_is_type(vals, list)
+    return filter_keyvals(events, key, vals, True)
 
 def q2_filter_period_intersect(datastore: Datastore, namespace: dict, events: list, filterevents: list):
     _verify_variable_is_type(events, list)
@@ -77,8 +79,9 @@ def q2_limit_events(datastore: Datastore, namespace: dict, events: list, count: 
 """
     Merge functions
 """
-def q2_merge_events_by_keys(datastore: Datastore, namespace: dict, events: list, *keys):
+def q2_merge_events_by_keys(datastore: Datastore, namespace: dict, events: list, keys: list):
     _verify_variable_is_type(events, list)
+    _verify_variable_is_type(keys, list)
     return merge_events_by_keys(events, keys)
 
 """

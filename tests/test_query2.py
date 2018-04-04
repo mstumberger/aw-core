@@ -247,11 +247,11 @@ def test_query2_query_functions(datastore):
     bid=\""""+bid+"""\";
     events=query_bucket(bid);
     events2=query_bucket(bid);
-    events2=filter_keyvals(events2, "label", "test1");
-    events2=exclude_keyvals(events2, "label", "test2");
+    events2=filter_keyvals(events2, "label", ["test1"]);
+    events2=exclude_keyvals(events2, "label", ["test2"]);
     events=filter_period_intersect(events, events2);
     events=limit_events(events, 1);
-    events=merge_events_by_keys(events, "label");
+    events=merge_events_by_keys(events, ["label"]);
     events=split_url_events(events);
     events=sort_by_timestamp(events);
     events=sort_by_duration(events);
@@ -324,7 +324,7 @@ def test_query2_test_merged_keys(datastore):
     """
     bid1=\""""+bid1+"""\";
     events=query_bucket(bid1);
-    events=merge_events_by_keys(events, "label1", "label2");
+    events=merge_events_by_keys(events, ["label1", "label2"]);
     events=sort_by_duration(events);
     eventcount=query_bucket_eventcount(bid1);
     RETURN={"events": events, "eventcount": eventcount};
