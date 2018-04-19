@@ -78,16 +78,36 @@ class SortEventsTests(unittest.TestCase):
 
 
 class MergeEventsByKeys(unittest.TestCase):
-    def test_merge_events_by_keys(self):
+    def test_merge_events_by_keys_1(self):
         now = datetime.now(timezone.utc)
         events = []
         e1 = Event(data={"label": "a"}, timestamp=now, duration=timedelta(seconds=1))
         e2 = Event(data={"label": "b"}, timestamp=now, duration=timedelta(seconds=1))
         events = events + [e1]*10
-        events = events + [e2]*10
+        events = events + [e2]*5
         result = merge_events_by_keys(events, ["label"])
+        print(result)
+        print(len(result))
         assert len(result) == 2
         assert result[0].duration == timedelta(seconds=10)
+        assert result[1].duration == timedelta(seconds=5)
+
+    def test_merge_events_by_keys_2(self):
+        now = datetime.now(timezone.utc)
+        events = []
+        e1 = Event(data={"k1": "a", "k2": "a"}, timestamp=now, duration=timedelta(seconds=1))
+        e2 = Event(data={"k1": "a", "k2": "c"}, timestamp=now, duration=timedelta(seconds=1))
+        e3 = Event(data={"k1": "b", "k2": "a"}, timestamp=now, duration=timedelta(seconds=1))
+        events = events + [e1]*10
+        events = events + [e2]*10
+        events = events + [e3]*10
+        result = merge_events_by_keys(events, ["k1", "k2"])
+        print(result)
+        print(len(result))
+        assert len(result) == 3
+        assert result[0].duration == timedelta(seconds=10)
+        assert result[1].duration == timedelta(seconds=10)
+        assert result[2].duration == timedelta(seconds=10)
 
 class URLParseEventTransform(unittest.TestCase):
     def test_url_parse_event(self):

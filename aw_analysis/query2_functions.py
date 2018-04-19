@@ -4,7 +4,7 @@ import iso8601
 from aw_core.models import Event
 from aw_datastore import Datastore
 
-from aw_transform import filter_period_intersect, filter_keyvals, merge_events_by_keys, sort_by_timestamp, sort_by_duration, limit_events, split_url_events
+from aw_transform import filter_period_intersect, filter_keyvals, merge_events_by_keys, sort_by_timestamp, sort_by_duration, split_url_events
 
 from .query2_error import QueryFunctionException
 
@@ -70,10 +70,15 @@ def q2_filter_period_intersect(datastore: Datastore, namespace: dict, events: li
     _verify_variable_is_type(filterevents, list)
     return filter_period_intersect(events, filterevents)
 
-def q2_limit_events(datastore: Datastore, namespace: dict, events: list, count: int):
+def q2_first(datastore: Datastore, namespace: dict, events: list, count: int=1):
     _verify_variable_is_type(events, list)
     _verify_variable_is_type(count, int)
-    return limit_events(events, count)
+    return events[:count]
+
+def q2_last(datastore: Datastore, namespace: dict, events: list, count: int=1):
+    _verify_variable_is_type(events, list)
+    _verify_variable_is_type(count, int)
+    return events[-count:]
 
 
 """
@@ -124,7 +129,8 @@ query2_functions = {
     "query_bucket": q2_query_bucket,
     "query_bucket_period": q2_query_bucket_period,
     "query_bucket_eventcount": q2_query_bucket_eventcount,
-    "limit_events": q2_limit_events,
+    "first": q2_first,
+    "last": q2_last,
     "merge_events_by_keys": q2_merge_events_by_keys,
     "sort_by_timestamp": q2_sort_by_timestamp,
     "sort_by_duration": q2_sort_by_duration,
