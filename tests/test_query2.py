@@ -6,8 +6,9 @@ import pytest
 from .utils import param_datastore_objects
 
 from aw_core.models import Event
-from aw_analysis.query2 import QueryException, query, _parse_token
+from aw_analysis.query2 import query, _parse_token
 from aw_analysis.query2 import QInteger, QVariable, QString, QFunction, QList, QDict
+from aw_analysis.query2_error import QueryFunctionException, QueryParseException, QueryInterpretException
 
 def test_query2_test_token_parsing():
     ns = {}
@@ -37,17 +38,17 @@ def test_query2_test_token_parsing():
     try:
         _parse_token(None, ns)
         assert(False)
-    except QueryException:
+    except QueryParseException:
         pass
     try:
         _parse_token('"', ns)
         assert(False)
-    except QueryException:
+    except QueryParseException:
         pass
     try:
         _parse_token("#", ns)
         assert(False)
-    except QueryException:
+    except QueryParseException:
         pass
 
 def test_dict():
@@ -67,31 +68,31 @@ def test_dict():
         d_str = "{b: 1}"
         d = QDict.parse(d_str, ns)
         assert False
-    except QueryException:
+    except QueryParseException:
         pass
     try: # Char following key string is not a :
         d_str = "{'test'p 1}"
         d = QDict.parse(d_str, ns)
         assert False
-    except QueryException:
+    except QueryParseException:
         pass
     try: # Value is not a valid token
         d_str = "{'test': #}"
         d = QDict.parse(d_str, ns)
         assert False
-    except QueryException:
+    except QueryParseException:
         pass
     try: # Semicolon without key
         d_str = "{:}"
         d = QDict.parse(d_str, ns)
         assert False
-    except QueryException:
+    except QueryParseException:
         pass
     try: # Trailing comma
         d_str = "{'test':1,}"
         d = QDict.parse(d_str, ns)
         assert False
-    except QueryException:
+    except QueryParseException:
         pass
 
 
@@ -112,19 +113,19 @@ def test_list():
         l_str = "[,]"
         l = QList.parse(l_str, ns)
         assert False
-    except QueryException:
+    except QueryParseException:
         pass
     try: # Comma without post value
         l_str = "[1,]"
         l = QList.parse(l_str, ns)
         assert False
-    except QueryException:
+    except QueryParseException:
         pass
     try: # Comma without pre value
         l_str = "[,2]"
         l = QList.parse(l_str, ns)
         assert False
-    except QueryException:
+    except QueryParseException:
         pass
 
 
@@ -136,43 +137,43 @@ def test_query2_bogus_query():
         example_query = "a="
         result = query(qname, example_query, qstartdate, qenddate, None)
         assert(False)
-    except QueryException:
+    except QueryParseException:
         pass
     try: # Assign to non-variable
         example_query = "1=2"
         result = query(qname, example_query, qstartdate, qenddate, None)
         assert(False)
-    except QueryException:
+    except QueryParseException:
         pass
     try: # Unclosed function
         example_query = "a=unclosed_function(var1"
         result = query(qname, example_query, qstartdate, qenddate, None)
         assert(False)
-    except QueryException:
+    except QueryParseException:
         pass
     try: # Call a function which doesn't exist
         example_query = "a=non_existing_function() "
         result = query(qname, example_query, qstartdate, qenddate, None)
         assert(False)
-    except QueryException:
+    except QueryInterpretException:
         pass
     try: # Two tokens in assignment
         example_query = "asd nop()=2"
         result = query(qname, example_query, qstartdate, qenddate, None)
         assert(False)
-    except QueryException:
+    except QueryParseException:
         pass
     try: # Unvlosed string
         example_query = 'asd="something is wrong with me'
         result = query(qname, example_query, qstartdate, qenddate, None)
         assert(False)
-    except QueryException:
+    except QueryParseException:
         pass
     try: # Two tokens in value
         example_query = "asd=asd1 asd2"
         result = query(qname, example_query, qstartdate, qenddate, None)
         assert(False)
-    except QueryException:
+    except QueryParseException:
         pass
 
 def test_query2_query_function_calling():
@@ -183,13 +184,13 @@ def test_query2_query_function_calling():
         example_query = "RETURN=asd();"
         result = query(qname, example_query, starttime, endtime, None)
         assert False
-    except QueryException as e:
+    except QueryInterpretException as e:
         print(e)
     try: # Function which does exist with invalid arguments
         example_query = "RETURN=nop(badarg);"
         result = query(qname, example_query, starttime, endtime, None)
         assert False
-    except QueryException as e:
+    except QueryInterpretException as e:
         print(e)
     # Function which does exist with valid arguments
     example_query = "RETURN=nop();"
@@ -215,7 +216,7 @@ def test_query2_return_value():
         example_query = "a=1"
         result = query(qname, example_query, starttime, endtime, None)
         assert False
-    except QueryException:
+    except QueryParseException:
         pass
 
 def test_query2_multiline():
@@ -230,6 +231,20 @@ RETURN=my_multiline_string;
     """
     result = query(qname, example_query, starttime, endtime, None)
     assert result == "a\nb"
+
+@pytest.mark.parametrize("datastore", param_datastore_objects())
+def test_query2_query_bucket(datastore):
+    qname = "asd"
+    starttime=iso8601.parse_date("1970-01-01")
+    endtime=iso8601.parse_date("1970-01-02")
+    bid = 'a'
+    try:
+        bucket = datastore.create_bucket(bucket_id=bid, type="test", client="test", hostname="test", name="asd")
+        example_query = "RETURN=query_bucket_period('{}', 'poop', 'p')".format(bid)
+        with pytest.raises(QueryFunctionException):
+            result = query(qname, example_query, starttime, endtime, datastore)
+    finally:
+        datastore.delete_bucket(bid)
 
 @pytest.mark.parametrize("datastore", param_datastore_objects())
 def test_query2_query_functions(datastore):
